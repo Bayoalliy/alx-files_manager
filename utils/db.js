@@ -85,9 +85,36 @@ class DBClient {
     try {
       const db = this.client.db(this.database);
       const collection = db.collection('files');
-      return(await collection.findOne(dic));
+      return(await collection.findOne(dic, { projection: {
+        localPath: 0,
+	_id: 0 
+      } }));
     } catch (err) {
       console.error('something is wrong with findUser:', err);
+    }
+  }
+
+  async findFiles(dic, page) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('files');
+      return(await collection.aggregate([
+	{ $match: dic },
+        { $sort: { _id: 1 } },
+        { $skip: 20*page },
+        { $limit: 20 },
+	{ $project: {
+	  id: "$_id",
+	  _id: 0,
+	  type: 1,
+	  userId: 1,
+	  name: 1,
+	  parentId: 1,
+	  isPublic: 1
+	} }
+      ]).toArray());
+    } catch (err) {
+        console.error('something is wrong with findFiles:', err);
     }
   }
 

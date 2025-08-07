@@ -74,3 +74,46 @@ export async function postUpload(req, res) {
 
 
 export async function getShow(req, res) {
+  const token = req.get('X-Token');
+  if (!token) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+
+  const userId = await redisClient.get(`auth_${token}`);
+  const objId = new ObjectId(userId);
+  const user = await dbClient.findUser({_id: objId});
+  if (!user) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+  
+  const fileId = new ObjectId(req.params.id);
+  const file = await dbClient.findFile({_id: fileId, userId: objId});
+  if (!file) {
+    return res.status(404).json({error: 'Not found'});
+  }
+  file.id = fileId;
+  return res.json(file);
+}
+
+export async function getIndex(req, res) {
+  const token = req.get('X-Token');
+  if (!token) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+
+  const userId = await redisClient.get(`auth_${token}`);
+  const objId = new ObjectId(userId);
+  const user = await dbClient.findUser({_id: objId});
+  if (!user) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+
+  const page = req.query.page || 0;
+  const parentId = req.query.parentId;
+  const dic = {userId: objId};
+  if (parentId) {
+    dic.parentId = new ObjectId( parentId);
+  }
+  const files = await dbClient.findFiles(dic, page);
+  return res.json(files);
+}
