@@ -60,10 +60,31 @@ class DBClient {
     }
   }
 
+  async createFile(dic) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('files');
+      return(await collection.insertOne(dic));
+    } catch (err) {
+      console.error('something is wrong with createFile:', err);
+    }
+  }
+    
+
   async findUser(dic) {
     try {
       const db = this.client.db(this.database);
       const collection = db.collection('users');
+      return(await collection.findOne(dic));
+    } catch (err) {
+      console.error('something is wrong with findUser:', err);
+    }
+  }
+
+  async findFile(dic) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('files');
       return(await collection.findOne(dic));
     } catch (err) {
       console.error('something is wrong with findUser:', err);
