@@ -3,9 +3,9 @@ import { createHash, randomUUID } from 'crypto';
 
 class DBClient {
   constructor() {
-    this.host = process.env.DB_HOST ? process.env.DB_HOST : 'localhost';
-    this.port = process.env.DB_PORT ? process.env.DB_PORT : '27017';
-    this.database = process.env.DATABASE ? process.env.DB_DATABASE : 'files_manager';
+    this.host = process.env.DB_HOST || 'localhost';
+    this.port = process.env.DB_PORT || '27017';
+    this.database = process.env.DATABASE || 'files_manager';
     this.uri = `mongodb://${this.host}:${this.port}`;
     this.client = new MongoClient(this.uri, {useUnifiedTopology: true,});
     try {
@@ -117,6 +117,17 @@ class DBClient {
         console.error('something is wrong with findFiles:', err);
     }
   }
+
+  async updateFile(filter, field) {
+    try {
+      const db = this.client.db(this.database);
+      const collection = db.collection('files');
+      return(await collection.updateOne(filter, { $set: field }));
+    } catch (err) {
+      console.error('something is wrong with updateFile:', err);
+    }
+  }
+    
 
   async isValidUser(user, password) {
     if (user) {

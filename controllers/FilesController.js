@@ -52,9 +52,8 @@ export async function postUpload(req, res) {
 
   if (type === 'folder') {
     const file = await dbClient.createFile(fileObj);
-    fileObj.id = file.insertedId;
     delete fileObj._id;
-    return res.status(201).json(fileObj);
+    return res.status(201).json({id: file.insertedId, ...fileObj});
   } else {
     const fileName = dbClient.generateToken();
     const relativePath = process.env.FOLDER_PATH || '/tmp/files_manager/';
@@ -65,10 +64,9 @@ export async function postUpload(req, res) {
     });
     fileObj.localPath = localPath;
     const file = await dbClient.createFile(fileObj);
-    fileObj.id = file.insertedId;
     delete fileObj.localPath;
     delete fileObj._id;
-    return res.status(201).json(fileObj);
+    return res.status(201).json({id: file.insertedId, ...fileObj});
   }
 }
 
@@ -117,3 +115,51 @@ export async function getIndex(req, res) {
   const files = await dbClient.findFiles(dic, page);
   return res.json(files);
 }
+
+export async function putPublish(req, res) {
+  const token = req.get('X-Token');
+  if (!token) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+
+  const userId = await redisClient.get(`auth_${token}`);
+  const objId = new ObjectId(userId);
+  const user = await dbClient.findUser({_id: objId});
+  if (!user) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+  
+  const fileId = new ObjectId(req.params.id);
+  const file = await dbClient.findFile({_id: fileId, userId: objId});
+  if (!file) {
+    return res.status(404).json({error: 'Not found'});
+  }
+  await  dbClient.updateFile({_id: fileId}, {isPublic: true});
+  const updatedFile = await dbClient.findFile({_id: fileId});
+  return res.json({id: fileId, ...updatedFile});
+}
+
+
+export async function putUnpublish(req, res) {
+  const token = req.get('X-Token');
+  if (!token) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+
+  const userId = await redisClient.get(`auth_${token}`);
+  const objId = new ObjectId(userId);
+  const user = await dbClient.findUser({_id: objId});
+  if (!user) {
+    return res.status(401).json({error: 'Unauthorized'});
+  }
+  
+  const fileId = new ObjectId(req.params.id);
+  const file = await dbClient.findFile({_id: fileId, userId: objId});
+  if (!file) {
+    return res.status(404).json({error: 'Not found'});
+  }
+  await  dbClient.updateFile({_id: fileId}, {isPublic: false});
+  const updatedFile = await dbClient.findFile({_id: fileId});
+  return res.json({id: fileId, ...updatedFile});
+}
+
