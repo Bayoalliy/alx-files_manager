@@ -3,8 +3,7 @@ import dbClient from '../utils/db.js';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import mime from 'mime-types';
-import { thumbnail } from '../utils/queue.js';
-
+import thumbnail from '../utils/queue.js';
 
 export async function postUpload(req, res) {
   const token = req.get('X-Token');
@@ -66,8 +65,10 @@ export async function postUpload(req, res) {
     });
     fileObj.localPath = localPath;
     const file = await dbClient.createFile(fileObj);
+
+    //create thumbnails for image
     if (type === 'image') {
-      await thumbnail.addJob({fileId: file.insertedId, ...fileObj});
+      await thumbnail.addJob({...fileObj});
     }
     delete fileObj.localPath;
     delete fileObj._id;
