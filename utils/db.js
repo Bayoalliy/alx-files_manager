@@ -86,7 +86,6 @@ class DBClient {
       const db = this.client.db(this.database);
       const collection = db.collection('files');
       return(await collection.findOne(dic, { projection: {
-        localPath: 0,
 	_id: 0 
       } }));
     } catch (err) {
