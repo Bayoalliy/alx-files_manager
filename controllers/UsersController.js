@@ -1,6 +1,7 @@
 import dbClient from '../utils/db';
 import { createHash } from 'crypto';
-
+import { addJob, messageQueue } from '../worker.js';
+import { ObjectId } from 'mongodb';
 
 export async function postNew(req, res) {
   if(!req.body.email) {
@@ -12,6 +13,8 @@ export async function postNew(req, res) {
   } else {
     const hashedPwd = dbClient.hashPassword(req.body.password)
     const user = await dbClient.createUser(req.body.email, hashedPwd);
+    console.log("Created user id: ", user.insertedId);
+    addJob({userId: user.insertedId, email: req.body.email}, messageQueue);
     res.json({id: user.insertedId, email: req.body.email});
   }
 }

@@ -3,7 +3,7 @@ import dbClient from '../utils/db.js';
 import { ObjectId } from 'mongodb';
 import fs from 'fs';
 import mime from 'mime-types';
-import thumbnail from '../utils/queue.js';
+import { addJob, thumbnailQueue } from '../worker.js';
 
 export async function postUpload(req, res) {
   const token = req.get('X-Token');
@@ -68,7 +68,7 @@ export async function postUpload(req, res) {
 
     //create thumbnails for image
     if (type === 'image') {
-      await thumbnail.addJob({...fileObj});
+      await addJob({...fileObj}, thumbnailQueue);
     }
     delete fileObj.localPath;
     delete fileObj._id;
@@ -177,6 +177,7 @@ export async function getFile(req, res) {
   const userId = await redisClient.get(`auth_${token}`);
   const objId = new ObjectId(userId);
   const user = await dbClient.findUser({_id: objId});
+  const size = req.query.size;
   if (user) {
     authorized = true;
   }
@@ -193,12 +194,16 @@ export async function getFile(req, res) {
   } else if(file.type === 'folder') {
     return res.status(400).json({error: "A folder doesn't have content"});
   }
-  if (!fs.existsSync(file.localPath)) {
-    console.log("file not found");
+
+  let filePath = file.localPath;
+  if (size) {
+    filePath = `${file.localPath}_${size}`;
+  }
+  if (!fs.existsSync(filePath)) {
     return res.status(404).json({error: 'Not found'});
   }
   const mimeType = mime.lookup(file.name);
-  fs.readFile(file.localPath, (err, data) => {
+  fs.readFile(filePath, (err, data) => {
     if (err) {
       return res.status(400).json({error: "Contents Unavailable"});
     }
