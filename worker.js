@@ -77,11 +77,10 @@ export async function addJob(data, queue) {
       if (!job.data.userId) {
         throw new Error("Missing userId");
       }
-      const user = await dbClient.findUser({email: job.data.email});
+      const user = await dbClient.findUser({_id: new ObjectId(job.data.userId)});
       if(!user) {
         throw new Error("User not found");
       }
-      console.log(`Welcome ${user.email}`);
     } catch (err) {
         console.error("can't send welcome email:", err);
     }

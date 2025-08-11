@@ -58,6 +58,13 @@ export async function postUpload(req, res) {
   } else {
     const fileName = dbClient.generateToken();
     const relativePath = process.env.FOLDER_PATH || '/tmp/files_manager/';
+    if (!fs.existsSync(relativePath)) {
+      try {
+        await fs.mkdir(relativePath, {recursive: true});
+      } catch (err) {
+        console.error(err);
+      }
+    }
     const localPath = `${relativePath}${fileName}`;
     const decodedData = Buffer.from(data, 'base64');
     await fs.writeFile(localPath, decodedData, (err) => {
